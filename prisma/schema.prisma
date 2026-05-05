@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  language  String   @default("en")
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cropRecommendations CropRecommendation[]
+  diseaseDetections   DiseaseDetection[]
+  chatSessions        ChatSession[]
+  weatherAlerts       WeatherAlert[]
+
+  @@map("users")
+}
+
+model CropRecommendation {
+  id               String   @id @default(cuid())
+  userId           String
+  latitude         Float?
+  longitude        Float?
+  location         String?
+  soilType         String
+  soilPh           Float?
+  nitrogen         Float?
+  phosphorus       Float?
+  potassium        Float?
+  rainfall         Float?
+  temperature      Float?
+  humidity         Float?
+  season           String?
+  recommendedCrops Json
+  confidence       Float?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("crop_recommendations")
+}
+
+model DiseaseDetection {
+  id         String   @id @default(cuid())
+  userId     String
+  imageUrl   String
+  cropType   String?
+  disease    String?
+  confidence Float?
+  severity   String?
+  treatment  Json?
+  prevention Json?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("disease_detections")
+}
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  language  String   @default("en")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ChatMessage[]
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String
+  content   String   @db.Text
+  audioUrl  String?
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model WeatherAlert {
+  id         String    @id @default(cuid())
+  userId     String
+  location   String
+  alertType  String
+  message    String    @db.Text
+  severity   String
+  validUntil DateTime?
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("weather_alerts")
+}
+
+model CropDatabase {
+  id          String   @id @default(cuid())
+  name        String
+  localNames  Json?
+  season      String[]
+  soilTypes   String[]
+  minTemp     Float
+  maxTemp     Float
+  minRainfall Float
+  maxRainfall Float
+  minPh       Float
+  maxPh       Float
+  description String?  @db.Text
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+
+  @@map("crop_database")
+}
