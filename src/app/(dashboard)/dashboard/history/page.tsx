@@ -1,23 +1,23 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Leaf, Bug, MessageSquare, Calendar, Loader2, BarChart2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlaskConical, AlertTriangle, MessageSquare, Calendar, Loader2, BarChart2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-interface CropRec {
+interface FertilizerRec {
   id: string;
+  cropType: string;
   soilType: string;
-  season: string | null;
-  temperature: number | null;
-  rainfall: number | null;
-  recommendedCrops: { crop: string; confidence: number }[];
+  area: number | null;
+  growthStage: string | null;
+  recommendations: { fertilizer: string; quantity: number; unit: string; confidence: number }[];
   createdAt: string;
 }
 
-interface DiseaseDetection {
+interface DeficiencyDetection {
   id: string;
   cropType: string | null;
-  disease: string | null;
+  deficiency: string | null;
   confidence: number | null;
   severity: string | null;
   createdAt: string;
@@ -32,15 +32,15 @@ interface ChatSession {
 }
 
 interface HistoryData {
-  cropRecommendations: CropRec[];
-  diseaseDetections: DiseaseDetection[];
+  fertilizerRecommendations: FertilizerRec[];
+  deficiencyDetections: DeficiencyDetection[];
   chatSessions: ChatSession[];
 }
 
-type Tab = "crops" | "disease" | "chats";
+type Tab = "fertilizer" | "deficiency" | "chats";
 
 export default function HistoryPage() {
-  const [tab, setTab] = useState<Tab>("crops");
+  const [tab, setTab] = useState<Tab>("fertilizer");
   const [data, setData] = useState<HistoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +51,7 @@ export default function HistoryPage() {
       try {
         const res = await fetch("/api/history");
         if (!res.ok) throw new Error("Failed to fetch history");
-        const json = await res.json();
-        setData(json);
+        setData(await res.json());
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Error loading history");
       } finally {
@@ -62,18 +61,18 @@ export default function HistoryPage() {
     fetchHistory();
   }, []);
 
-  const tabs: { key: Tab; label: string; icon: typeof Leaf; count?: number }[] = [
+  const tabs: { key: Tab; label: string; icon: React.ElementType; count?: number }[] = [
     {
-      key: "crops",
-      label: "Crop Recommendations",
-      icon: Leaf,
-      count: data?.cropRecommendations.length,
+      key: "fertilizer",
+      label: "Fertilizer Recommendations",
+      icon: FlaskConical,
+      count: data?.fertilizerRecommendations.length,
     },
     {
-      key: "disease",
-      label: "Disease Detections",
-      icon: Bug,
-      count: data?.diseaseDetections.length,
+      key: "deficiency",
+      label: "Deficiency Analyses",
+      icon: AlertTriangle,
+      count: data?.deficiencyDetections.length,
     },
     {
       key: "chats",
@@ -84,9 +83,9 @@ export default function HistoryPage() {
   ];
 
   const getSeverityVariant = (severity: string | null) => {
-    if (severity === "severe") return "destructive";
-    if (severity === "moderate") return "default";
-    return "secondary";
+    if (severity === "severe") return "destructive" as const;
+    if (severity === "moderate") return "default" as const;
+    return "secondary" as const;
   };
 
   return (
@@ -94,11 +93,10 @@ export default function HistoryPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">History</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Review your past crop recommendations, disease detections, and chat sessions.
+          Review your past fertilizer recommendations, deficiency analyses, and chat sessions.
         </p>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-green-50 p-1 rounded-xl w-fit flex-wrap">
         {tabs.map((t) => {
           const Icon = t.icon;
@@ -143,52 +141,51 @@ export default function HistoryPage() {
 
       {!loading && data && (
         <>
-          {tab === "crops" && (
+          {tab === "fertilizer" && (
             <div className="space-y-3">
-              {data.cropRecommendations.length === 0 ? (
-                <EmptyState icon={Leaf} label="No crop recommendations yet." />
+              {data.fertilizerRecommendations.length === 0 ? (
+                <EmptyState icon={FlaskConical} label="No fertilizer recommendations yet." />
               ) : (
-                data.cropRecommendations.map((rec) => {
-                  const topCrop =
-                    Array.isArray(rec.recommendedCrops) ? rec.recommendedCrops[0] : null;
+                data.fertilizerRecommendations.map((rec) => {
+                  const top = Array.isArray(rec.recommendations) ? rec.recommendations[0] : null;
                   return (
                     <Card key={rec.id}>
                       <CardContent className="p-5">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-start gap-3">
                             <div className="bg-green-100 p-2 rounded-lg mt-0.5">
-                              <Leaf className="w-4 h-4 text-green-700" />
+                              <FlaskConical className="w-4 h-4 text-green-700" />
                             </div>
                             <div>
                               <p className="font-semibold text-gray-900 capitalize">
-                                {topCrop ? `Best: ${topCrop.crop}` : "Crop Recommendation"}
+                                {top ? `Primary: ${top.fertilizer}` : "Fertilizer Recommendation"}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {rec.soilType} soil — {rec.season ?? "N/A"} season
+                                {rec.cropType} — {rec.soilType} soil
+                                {rec.area ? ` — ${rec.area} ha` : ""}
                               </p>
-                              {rec.temperature && rec.rainfall && (
-                                <p className="text-xs text-gray-400 mt-0.5">
-                                  {rec.temperature}°C, {rec.rainfall}mm rain
+                              {rec.growthStage && (
+                                <p className="text-xs text-gray-400 mt-0.5 capitalize">
+                                  {rec.growthStage} stage
                                 </p>
                               )}
-                              {Array.isArray(rec.recommendedCrops) &&
-                                rec.recommendedCrops.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {rec.recommendedCrops.slice(0, 4).map((c) => (
-                                      <Badge key={c.crop} variant="secondary" className="capitalize text-xs">
-                                        {c.crop} ({Math.round(c.confidence * 100)}%)
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
+                              {Array.isArray(rec.recommendations) && rec.recommendations.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {rec.recommendations.slice(0, 4).map((r) => (
+                                    <Badge key={r.fertilizer} variant="secondary" className="text-xs">
+                                      {r.fertilizer} ({r.quantity} {r.unit})
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            {topCrop && (
+                          <div className="text-right shrink-0">
+                            {top && (
                               <div className="flex items-center gap-1 text-green-700 mb-1">
                                 <BarChart2 className="w-4 h-4" />
                                 <span className="font-semibold text-sm">
-                                  {Math.round(topCrop.confidence * 100)}%
+                                  {Math.round(top.confidence * 100)}%
                                 </span>
                               </div>
                             )}
@@ -206,34 +203,34 @@ export default function HistoryPage() {
             </div>
           )}
 
-          {tab === "disease" && (
+          {tab === "deficiency" && (
             <div className="space-y-3">
-              {data.diseaseDetections.length === 0 ? (
-                <EmptyState icon={Bug} label="No disease detections yet." />
+              {data.deficiencyDetections.length === 0 ? (
+                <EmptyState icon={AlertTriangle} label="No deficiency analyses yet." />
               ) : (
-                data.diseaseDetections.map((det) => (
+                data.deficiencyDetections.map((det) => (
                   <Card key={det.id}>
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div className="bg-red-100 p-2 rounded-lg mt-0.5">
-                            <Bug className="w-4 h-4 text-red-700" />
+                          <div className="bg-orange-100 p-2 rounded-lg mt-0.5">
+                            <AlertTriangle className="w-4 h-4 text-orange-700" />
                           </div>
                           <div>
                             <p className="font-semibold text-gray-900">
-                              {det.disease ?? "Unknown Disease"}
+                              {det.deficiency ?? "Unknown Deficiency"}
                             </p>
                             <p className="text-sm text-gray-500 capitalize">
                               Crop: {det.cropType ?? "Unknown"}
                             </p>
-                            {det.confidence && (
+                            {det.confidence !== null && (
                               <p className="text-xs text-gray-400 mt-0.5">
                                 Confidence: {Math.round(det.confidence * 100)}%
                               </p>
                             )}
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0 space-y-1">
+                        <div className="text-right shrink-0 space-y-1">
                           {det.severity && (
                             <Badge variant={getSeverityVariant(det.severity)}>
                               {det.severity}
@@ -267,7 +264,7 @@ export default function HistoryPage() {
                           </div>
                           <div>
                             <p className="font-semibold text-gray-900">
-                              {session.title ?? "Farming Query"}
+                              {session.title ?? "Fertilizer Query"}
                             </p>
                             <p className="text-sm text-gray-500">
                               Language: {session.language.toUpperCase()} —{" "}
@@ -275,7 +272,7 @@ export default function HistoryPage() {
                             </p>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
+                        <p className="text-xs text-gray-400 flex items-center gap-1 shrink-0">
                           <Calendar className="w-3 h-3" />
                           {new Date(session.createdAt).toLocaleDateString()}
                         </p>

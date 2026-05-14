@@ -24,12 +24,18 @@ const LANGUAGES = [
   { code: "gu", label: "Gujarati", speechCode: "gu-IN" },
 ];
 
+const SUGGESTED_QUERIES = [
+  "How much urea should I apply for wheat?",
+  "What causes yellow leaves in rice?",
+  "When should I apply DAP fertilizer?",
+];
+
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content:
-        "Hello! I'm your AI farming assistant. Ask me anything about crops, diseases, weather, or farming practices. I'm here to help!",
+        "Hello! I'm your AI fertilizer advisor. Ask me anything about fertilizers, nutrient deficiencies, soil health, or fertilizer application schedules. I'm here to help!",
       timestamp: new Date(),
     },
   ]);
@@ -58,11 +64,7 @@ export default function ChatbotPage() {
     const text = input.trim();
     if (!text || loading) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: text,
-      timestamp: new Date(),
-    };
+    const userMessage: Message = { role: "user", content: text, timestamp: new Date() };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
@@ -73,18 +75,12 @@ export default function ChatbotPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, language, sessionId }),
       });
-      if (!res.ok) {
-        throw new Error("Failed to get response");
-      }
+      if (!res.ok) throw new Error("Failed to get response");
       const data = await res.json();
       if (data.sessionId) setSessionId(data.sessionId);
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: data.response,
-          timestamp: new Date(),
-        },
+        { role: "assistant", content: data.response, timestamp: new Date() },
       ]);
     } catch {
       setMessages((prev) => [
@@ -103,20 +99,21 @@ export default function ChatbotPage() {
   return (
     <div className="max-w-3xl flex flex-col h-[calc(100vh-10rem)]">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">AI Farming Chatbot</h1>
+        <h1 className="text-2xl font-bold text-gray-900">AI Fertilizer Chatbot</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Ask farming questions in your preferred language.
+          Ask fertilizer and nutrient questions in your preferred language.
         </p>
       </div>
 
-      {/* Language Selector */}
       <div className="flex items-center gap-3 mb-4">
-        <Label htmlFor="language" className="shrink-0">Language:</Label>
+        <Label htmlFor="language" className="shrink-0">
+          Language:
+        </Label>
         <Select
           id="language"
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="max-w-[180px]"
+          className="max-w-45"
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code}>
@@ -126,7 +123,6 @@ export default function ChatbotPage() {
         </Select>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto bg-white border border-green-100 rounded-xl p-4 space-y-4 min-h-0">
         {messages.map((msg, idx) => (
           <div
@@ -134,7 +130,7 @@ export default function ChatbotPage() {
             className={`flex items-start gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                 msg.role === "user" ? "bg-green-600" : "bg-gray-100"
               }`}
             >
@@ -157,10 +153,7 @@ export default function ChatbotPage() {
                   msg.role === "user" ? "text-green-200" : "text-gray-400"
                 }`}
               >
-                {msg.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
           </div>
@@ -182,16 +175,11 @@ export default function ChatbotPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested queries */}
       <div className="flex gap-2 mt-3 flex-wrap">
-        {[
-          "Best crops for clay soil?",
-          "How to treat leaf blight?",
-          "Irrigation schedule for wheat?",
-        ].map((q) => (
+        {SUGGESTED_QUERIES.map((q) => (
           <button
             key={q}
-            onClick={() => { setInput(q); }}
+            onClick={() => setInput(q)}
             className="text-xs bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-1 hover:bg-green-100 transition-colors"
           >
             {q}
@@ -199,12 +187,11 @@ export default function ChatbotPage() {
         ))}
       </div>
 
-      {/* Input */}
       <form onSubmit={sendMessage} className="flex gap-2 mt-3">
         <div className="relative flex-1">
           <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
-            placeholder={`Message in ${currentLang.label}...`}
+            placeholder={`Ask about fertilizers in ${currentLang.label}...`}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="pl-9 pr-4"
@@ -213,11 +200,7 @@ export default function ChatbotPage() {
         </div>
         <VoiceInput onTranscript={handleVoiceTranscript} language={currentLang.speechCode} />
         <Button type="submit" disabled={!input.trim() || loading}>
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </Button>
       </form>
     </div>

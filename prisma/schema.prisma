@@ -18,44 +18,40 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  cropRecommendations CropRecommendation[]
-  diseaseDetections   DiseaseDetection[]
-  chatSessions        ChatSession[]
-  weatherAlerts       WeatherAlert[]
+  fertilizerRecommendations FertilizerRecommendation[]
+  deficiencyDetections      DeficiencyDetection[]
+  chatSessions              ChatSession[]
+  weatherAlerts             WeatherAlert[]
 
   @@map("users")
 }
 
-model CropRecommendation {
-  id               String   @id @default(cuid())
-  userId           String
-  latitude         Float?
-  longitude        Float?
-  location         String?
-  soilType         String
-  soilPh           Float?
-  nitrogen         Float?
-  phosphorus       Float?
-  potassium        Float?
-  rainfall         Float?
-  temperature      Float?
-  humidity         Float?
-  season           String?
-  recommendedCrops Json
-  confidence       Float?
-  createdAt        DateTime @default(now())
+model FertilizerRecommendation {
+  id          String   @id @default(cuid())
+  userId      String
+  cropType    String
+  soilType    String
+  soilPh      Float?
+  currentN    Float?
+  currentP    Float?
+  currentK    Float?
+  area        Float?
+  growthStage String?
+  recommendations Json
+  confidence  Float?
+  createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("crop_recommendations")
+  @@map("fertilizer_recommendations")
 }
 
-model DiseaseDetection {
+model DeficiencyDetection {
   id         String   @id @default(cuid())
   userId     String
   imageUrl   String
   cropType   String?
-  disease    String?
+  deficiency String?
   confidence Float?
   severity   String?
   treatment  Json?
@@ -64,7 +60,7 @@ model DiseaseDetection {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("disease_detections")
+  @@map("deficiency_detections")
 }
 
 model ChatSession {
@@ -108,23 +104,4 @@ model WeatherAlert {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("weather_alerts")
-}
-
-model CropDatabase {
-  id          String   @id @default(cuid())
-  name        String
-  localNames  Json?
-  season      String[]
-  soilTypes   String[]
-  minTemp     Float
-  maxTemp     Float
-  minRainfall Float
-  maxRainfall Float
-  minPh       Float
-  maxPh       Float
-  description String?  @db.Text
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-
-  @@map("crop_database")
 }

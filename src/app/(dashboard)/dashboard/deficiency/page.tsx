@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Camera, Upload, Loader2, AlertTriangle, CheckCircle, Bug, X } from "lucide-react";
+import { Camera, Upload, Loader2, AlertTriangle, CheckCircle, FlaskConical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 
 interface DetectionResult {
-  disease: string;
-  disease_key: string;
+  deficiency: string;
+  deficiency_key: string;
   confidence: number;
   severity: string;
   crop_type: string;
@@ -20,7 +20,7 @@ interface DetectionResult {
   prevention: string[];
 }
 
-export default function DiseasePage() {
+export default function DeficiencyPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [cropType, setCropType] = useState("unknown");
@@ -61,7 +61,7 @@ export default function DiseasePage() {
       const formData = new FormData();
       formData.append("image", file);
       formData.append("cropType", cropType);
-      const res = await fetch("/api/disease/detect", {
+      const res = await fetch("/api/deficiency/detect", {
         method: "POST",
         body: formData,
       });
@@ -69,8 +69,7 @@ export default function DiseasePage() {
         const err = await res.json();
         throw new Error(err.error ?? "Detection failed");
       }
-      const data = await res.json();
-      setResult(data);
+      setResult(await res.json());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -79,18 +78,17 @@ export default function DiseasePage() {
   };
 
   const getSeverityVariant = (severity: string) => {
-    if (severity === "severe") return "destructive";
-    if (severity === "moderate") return "default";
-    if (severity === "none") return "secondary";
-    return "secondary";
+    if (severity === "severe") return "destructive" as const;
+    if (severity === "moderate") return "default" as const;
+    return "secondary" as const;
   };
 
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Disease Detection</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Nutrient Deficiency Detection</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Upload a plant image for instant AI-powered disease diagnosis.
+          Upload a plant or leaf image for AI-powered nutrient deficiency diagnosis.
         </p>
       </div>
 
@@ -100,7 +98,6 @@ export default function DiseasePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Dropzone */}
             {!preview ? (
               <div
                 {...getRootProps()}
@@ -142,13 +139,14 @@ export default function DiseasePage() {
               </div>
             )}
 
-            {/* Camera note */}
             <div className="flex items-center gap-2 text-sm text-gray-500 bg-blue-50 border border-blue-100 rounded-lg p-3">
               <Camera className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              <span>You can also take a photo directly by clicking &quot;Upload&quot; and selecting your camera on mobile.</span>
+              <span>
+                For best results, photograph the affected leaves in natural daylight. You can also
+                take a photo directly from your mobile camera.
+              </span>
             </div>
 
-            {/* Crop selector */}
             <div className="space-y-1.5">
               <Label htmlFor="cropType">Crop Type (optional)</Label>
               <Select
@@ -185,8 +183,8 @@ export default function DiseasePage() {
                 </>
               ) : (
                 <>
-                  <Bug className="w-4 h-4 mr-2" />
-                  Detect Disease
+                  <FlaskConical className="w-4 h-4 mr-2" />
+                  Detect Nutrient Deficiency
                 </>
               )}
             </Button>
@@ -194,18 +192,21 @@ export default function DiseasePage() {
         </CardContent>
       </Card>
 
-      {/* Results */}
       {result && (
-        <Card className={result.disease_key === "healthy" ? "border-green-400" : "border-orange-300"}>
+        <Card
+          className={
+            result.deficiency_key === "healthy" ? "border-green-400" : "border-orange-300"
+          }
+        >
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                {result.disease_key === "healthy" ? (
+                {result.deficiency_key === "healthy" ? (
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 ) : (
                   <AlertTriangle className="w-5 h-5 text-orange-500" />
                 )}
-                {result.disease}
+                {result.deficiency}
               </CardTitle>
               <Badge variant={getSeverityVariant(result.severity)}>
                 {result.severity.toUpperCase()}
@@ -213,7 +214,6 @@ export default function DiseasePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Confidence */}
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-500">Confidence</span>
@@ -229,16 +229,14 @@ export default function DiseasePage() {
               </div>
             </div>
 
-            {/* Symptoms */}
             <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4">
               <p className="text-sm font-semibold text-yellow-800 mb-1">Symptoms Observed</p>
               <p className="text-sm text-yellow-700">{result.symptoms}</p>
             </div>
 
-            {/* Treatment + Prevention */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-red-50 border border-red-100 rounded-lg p-4">
-                <p className="text-sm font-semibold text-red-800 mb-2">Treatment</p>
+                <p className="text-sm font-semibold text-red-800 mb-2">Fertilizer Treatment</p>
                 <ul className="space-y-1.5">
                   {result.treatment.map((t) => (
                     <li key={t} className="text-xs text-red-700 flex items-start gap-1.5">

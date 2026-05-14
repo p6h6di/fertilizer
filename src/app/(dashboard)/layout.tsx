@@ -6,7 +6,6 @@ import { WeatherWidget } from "@/components/WeatherWidget";
 import {
   Home,
   FlaskConical,
-  Leaf,
   Bug,
   CloudSun,
   MessageSquare,
@@ -18,8 +17,8 @@ import { useState } from "react";
 
 const navLinks = [
   { href: "/dashboard", label: "Overview", icon: Home },
-  { href: "/dashboard/crops", label: "Crop Recommendation", icon: Leaf },
-  { href: "/dashboard/disease", label: "Disease Detection", icon: Bug },
+  { href: "/dashboard/fertilizer", label: "Fertilizer Recommendation", icon: FlaskConical },
+  { href: "/dashboard/deficiency", label: "Deficiency Detection", icon: Bug },
   { href: "/dashboard/weather", label: "Weather Advisory", icon: CloudSun },
   { href: "/dashboard/chatbot", label: "AI Chatbot", icon: MessageSquare },
   { href: "/dashboard/history", label: "History", icon: History },

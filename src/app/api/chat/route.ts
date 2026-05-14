@@ -2,60 +2,57 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 
-// Rule-based farming advisor fallback
-function generateFarmingResponse(message: string, language: string): string {
+function generateFertilizerResponse(message: string): string {
   const lower = message.toLowerCase();
 
   const responses: { keywords: string[]; answer: string }[] = [
     {
-      keywords: ["crop", "recommend", "grow", "plant", "sow", "cultivate"],
+      keywords: ["urea", "nitrogen", "npk", "fertilizer", "fertiliser", "dap", "mop", "potash", "phosphorus"],
       answer:
-        "For crop recommendation, consider your soil type, local climate, and season. Kharif crops (rice, maize, soybean) are grown in monsoon (June-Sep). Rabi crops (wheat, mustard, chickpea) are grown in winter (Oct-Mar). Please use the Crop Recommendation tool for precise suggestions based on your soil parameters.",
+        "Fertilizer guidelines:\n1. Conduct a soil test before applying any fertilizer.\n2. Urea (46% N) is the main nitrogen source — split into 2–3 doses to reduce loss.\n3. DAP (18-46-0) provides both nitrogen and phosphorus — apply as basal dose at sowing.\n4. MOP (0-0-60) supplies potassium — apply with basal or second irrigation.\n5. Avoid over-fertilization as it causes groundwater pollution and crop burning.\nUse the Fertilizer Recommendation tool for precise rates based on your soil test results.",
     },
     {
-      keywords: ["disease", "pest", "blight", "fungus", "infection", "rot", "mildew", "rust"],
+      keywords: ["deficiency", "yellow", "pale", "chlorosis", "nutrient", "micronutrient", "zinc", "iron", "magnesium"],
       answer:
-        "For plant diseases: 1) Remove infected plant material immediately. 2) Apply appropriate fungicide or pesticide. 3) Improve field drainage and air circulation. 4) Use the Disease Detection tool for photo-based diagnosis. Common treatments include copper-based fungicides for fungal diseases and neem oil for pests.",
+        "Nutrient deficiency symptoms:\n• Nitrogen deficiency: yellowing starting from older/lower leaves, stunted growth.\n• Phosphorus deficiency: purple/reddish discoloration on leaf undersides.\n• Potassium deficiency: brown leaf edges (leaf scorch), starting on older leaves.\n• Iron deficiency: yellowing between veins on young leaves (interveinal chlorosis).\n• Zinc deficiency: small, mottled leaves, shortened internodes.\nUpload a plant image in the Deficiency Detection tool for AI-powered diagnosis.",
     },
     {
-      keywords: ["water", "irrigat", "drip", "flood"],
+      keywords: ["soil", "ph", "acid", "alkaline", "lime", "gypsum"],
       answer:
-        "Irrigation tips: 1) Water deeply but infrequently to encourage deep root growth. 2) Drip irrigation saves 30-50% water vs flood irrigation. 3) Water in early morning to reduce evaporation. 4) Check soil moisture before irrigation — insert finger 2 inches deep. 5) Match irrigation schedule to crop growth stage.",
+        "Soil pH and fertilizer efficiency:\n1. Most crops prefer pH 6.0–7.0 for optimal nutrient uptake.\n2. Acidic soil (pH < 6): apply agricultural lime (CaCO₃) — 2–4 weeks before sowing.\n3. Alkaline soil (pH > 8): apply gypsum (CaSO₄) or sulfur to lower pH.\n4. At wrong pH, fertilizers become locked in soil and unavailable to plants.\n5. Test soil pH annually and adjust before the season.",
     },
     {
-      keywords: ["fertilizer", "npk", "nitrogen", "phosphorus", "potassium", "urea"],
+      keywords: ["organic", "compost", "manure", "biofertilizer", "vermicompost"],
       answer:
-        "Fertilizer guidelines: 1) Conduct soil test before applying fertilizers. 2) Apply NPK based on soil deficiency and crop requirement. 3) Use organic manure (compost, vermicompost) to improve soil health. 4) Split nitrogen application into 2-3 doses. 5) Avoid over-fertilization which causes groundwater pollution.",
+        "Organic and bio-fertilizers:\n1. Farm Yard Manure (FYM): apply 10–15 t/ha two weeks before sowing — improves soil structure.\n2. Vermicompost: apply 2–3 t/ha — high in micronutrients and beneficial microbes.\n3. Green manure crops (dhaincha, sunhemp): plow in before flowering to add 60–80 kg N/ha.\n4. Rhizobium biofertilizer: seed treat legumes (soybean, chickpea) to fix atmospheric nitrogen.\n5. Combine organic + chemical fertilizers to reduce chemical dose by 25–50%.",
     },
     {
-      keywords: ["weather", "rain", "temperature", "forecast", "climate"],
+      keywords: ["dose", "quantity", "how much", "rate", "kg", "apply"],
       answer:
-        "Weather affects farming significantly. Use the Weather Advisory tool for real-time data. Generally: 1) Avoid pesticide application before rain. 2) Harvest before heavy rainfall. 3) Cover seedlings during extreme heat or frost. 4) Sow seeds when soil temperature is optimal for the crop.",
+        "General fertilizer doses by crop:\n• Rice: 120:60:60 kg N:P:K per hectare\n• Wheat: 120:60:40 kg/ha\n• Maize: 150:75:60 kg/ha\n• Cotton: 120:60:60 kg/ha\n• Potato: 180:100:150 kg/ha\n• Soybean: 30:60:40 kg/ha\nAlways subtract existing soil nutrient levels from these totals. Use the Fertilizer Recommendation tool for precise calculations including your soil test data.",
     },
     {
-      keywords: ["harvest", "yield", "production", "output"],
+      keywords: ["time", "when", "schedule", "stage", "basal", "top dress"],
       answer:
-        "To maximize yield: 1) Use certified high-yielding variety seeds. 2) Follow proper spacing and planting depth. 3) Ensure timely irrigation and fertilization. 4) Monitor and control pests early. 5) Harvest at the right maturity stage to avoid post-harvest losses.",
+        "Fertilizer application timing:\n1. Basal dose (at sowing): apply all P and K + 1/3 N.\n2. First top dressing (30 days after sowing): apply 1/3 N.\n3. Second top dressing (60 days after sowing): apply remaining 1/3 N.\n4. Avoid nitrogen application at flowering stage — it causes excess vegetative growth.\n5. Foliar spray of micronutrients (zinc sulfate, ferrous sulfate) is effective at early vegetative stage.",
     },
     {
-      keywords: ["soil", "ph", "sandy", "clay", "loamy", "black"],
+      keywords: ["water", "irrigat", "fertigation", "drip"],
       answer:
-        "Soil management tips: 1) Test soil pH annually — most crops prefer 6.0-7.0. 2) Add lime to raise pH and sulfur to lower it. 3) Improve sandy soil with organic matter. 4) Improve clay soil drainage with gypsum and organic compost. 5) Practice crop rotation to maintain soil health.",
+        "Fertigation (fertilizer through irrigation):\n1. Drip fertigation saves 30–40% fertilizer vs. soil application.\n2. Use water-soluble fertilizers only (urea, potassium nitrate, MAP).\n3. Apply in split doses — fertilize with every 2nd or 3rd irrigation.\n4. Flush drip lines with plain water after each fertigation session.\n5. Fertigation is most effective for vegetables, sugarcane, and orchards.",
     },
     {
-      keywords: ["market", "price", "sell", "profit", "income", "msp"],
+      keywords: ["weather", "rain", "temperature", "forecast"],
       answer:
-        "Market tips for farmers: 1) Check MSP (Minimum Support Price) rates from government portals. 2) Join Farmer Producer Organizations (FPOs) for better negotiating power. 3) Use e-NAM (National Agricultural Market) for online price discovery. 4) Store produce in proper facilities to sell when prices are favorable.",
+        "Weather and fertilizer application:\n1. Do not apply fertilizer before heavy rain — nutrients will be washed away.\n2. Top dress nitrogen when soil is moist but not waterlogged.\n3. Avoid fertilizer application during extreme heat (>40°C) — causes leaf burn.\n4. Foliar sprays should be applied in early morning or evening to prevent scorching.\n5. Check the Weather Advisory tool for the 5-day forecast before planning fertilizer application.",
     },
   ];
 
   for (const { keywords, answer } of responses) {
-    if (keywords.some((k) => lower.includes(k))) {
-      return answer;
-    }
+    if (keywords.some((k) => lower.includes(k))) return answer;
   }
 
-  return `Thank you for your question about farming. I'm your AI agricultural assistant. I can help you with:\n\n• Crop selection and recommendations\n• Disease identification and treatment\n• Irrigation and water management\n• Fertilizer application\n• Weather-based farming advice\n• Soil health management\n• Market information\n\nPlease ask a specific question and I'll provide detailed guidance. For best results, also use the specialized tools (Crop Recommendation, Disease Detection, Weather Advisory) available in your dashboard.`;
+  return `Thank you for your fertilizer question. I'm your AI fertilizer advisor. I can help with:\n\n• Fertilizer types and NPK doses by crop\n• Nutrient deficiency identification and treatment\n• Soil pH correction and lime/gypsum application\n• Organic and bio-fertilizer recommendations\n• Fertilizer application timing and scheduling\n• Fertigation planning for drip irrigation\n• Weather-based fertilizer advisory\n\nAsk a specific question for detailed guidance, or use the Fertilizer Recommendation tool for precise calculations based on your soil test data.`;
 }
 
 export async function POST(req: NextRequest) {
@@ -78,20 +75,19 @@ export async function POST(req: NextRequest) {
 
   let response = "";
 
-  // Try Google Gemini API if configured
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (geminiKey) {
     try {
-      const langName = {
+      const langName: Record<string, string> = {
         en: "English", hi: "Hindi", ta: "Tamil", te: "Telugu",
         bn: "Bengali", mr: "Marathi", pa: "Punjabi", gu: "Gujarati",
-      }[language] ?? "English";
+      };
 
-      const prompt = `You are an expert agricultural advisor for Indian farmers. Answer the following farming question in ${langName}. Be practical, concise, and specific to Indian agricultural context.
+      const prompt = `You are an expert fertilizer and soil nutrition advisor for Indian farmers. Answer the following question in ${langName[language] ?? "English"}. Be practical, specific, and focused on fertilizer use, nutrient management, and soil health in the Indian agricultural context.
 
 Question: ${message}
 
-Provide a helpful, accurate response focused on practical farming advice.`;
+Provide a clear, actionable response with specific fertilizer product names, quantities, and application methods where relevant.`;
 
       const geminiRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
@@ -107,20 +103,17 @@ Provide a helpful, accurate response focused on practical farming advice.`;
 
       if (geminiRes.ok) {
         const geminiData = await geminiRes.json();
-        response =
-          geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+        response = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
       }
     } catch (err) {
       console.error("Gemini API error:", err);
     }
   }
 
-  // Fallback to rule-based response
   if (!response) {
-    response = generateFarmingResponse(message, language);
+    response = generateFertilizerResponse(message);
   }
 
-  // Save to DB
   let savedSessionId = sessionId;
   try {
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
@@ -131,18 +124,12 @@ Provide a helpful, accurate response focused on practical farming advice.`;
           where: { id: savedSessionId, userId: user.id },
         });
       }
-
       if (!chatSession) {
         chatSession = await prisma.chatSession.create({
-          data: {
-            userId: user.id,
-            language,
-            title: message.slice(0, 50),
-          },
+          data: { userId: user.id, language, title: message.slice(0, 50) },
         });
         savedSessionId = chatSession.id;
       }
-
       await prisma.chatMessage.createMany({
         data: [
           { sessionId: chatSession.id, role: "user", content: message },

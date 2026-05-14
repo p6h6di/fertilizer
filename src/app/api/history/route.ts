@@ -7,61 +7,70 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const empty = {
+    fertilizerRecommendations: [],
+    deficiencyDetections: [],
+    chatSessions: [],
+  };
+
   try {
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-    if (!user) {
-      return Response.json({
-        cropRecommendations: [],
-        diseaseDetections: [],
-        chatSessions: [],
-      });
-    }
+    if (!user) return Response.json(empty);
 
-    const [cropRecommendations, diseaseDetections, chatSessions] = await Promise.all([
-      prisma.cropRecommendation.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        select: {
-          id: true,
-          soilType: true,
-          season: true,
-          temperature: true,
-          rainfall: true,
-          recommendedCrops: true,
-          createdAt: true,
-        },
-      }),
-      prisma.diseaseDetection.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        select: {
-          id: true,
-          cropType: true,
-          disease: true,
-          confidence: true,
-          severity: true,
-          createdAt: true,
-        },
-      }),
-      prisma.chatSession.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        select: {
-          id: true,
-          title: true,
-          language: true,
-          createdAt: true,
-          _count: { select: { messages: true } },
-        },
-      }),
+    const [fertilizerRecommendations, deficiencyDetections, chatSessions] = await Promise.all([
+      prisma.fertilizerRecommendation
+        .findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          select: {
+            id: true,
+            cropType: true,
+            soilType: true,
+            area: true,
+            growthStage: true,
+            recommendations: true,
+            createdAt: true,
+          },
+        })
+        .catch(() => []),
+
+      prisma.deficiencyDetection
+        .findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          select: {
+            id: true,
+            cropType: true,
+            deficiency: true,
+            confidence: true,
+            severity: true,
+            createdAt: true,
+          },
+        })
+        .catch(() => []),
+
+      prisma.chatSession
+        .findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          select: {
+            id: true,
+            title: true,
+            language: true,
+            createdAt: true,
+            _count: { select: { messages: true } },
+          },
+        })
+        .catch(() => []),
     ]);
 
-    return Response.json({ cropRecommendations, diseaseDetections, chatSessions });
+    return Response.json({ fertilizerRecommendations, deficiencyDetections, chatSessions });
   } catch (err) {
     console.error("History fetch error:", err);
-    return Response.json({ error: "Failed to fetch history" }, { status: 500 });
+    // Return empty state instead of 500 so the page still renders
+    return Response.json(empty);
   }
 }

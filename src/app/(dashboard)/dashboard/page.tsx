@@ -3,8 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import {
-  Leaf,
-  Bug,
+  FlaskConical,
+  AlertTriangle,
   MessageSquare,
   CloudSun,
   ArrowRight,
@@ -14,28 +14,28 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 async function getUserStats(userId: string) {
-  const [cropCount, diseaseCount, chatCount, weatherCount] = await Promise.all([
-    prisma.cropRecommendation.count({ where: { user: { clerkId: userId } } }),
-    prisma.diseaseDetection.count({ where: { user: { clerkId: userId } } }),
+  const [fertilizerCount, deficiencyCount, chatCount, weatherCount] = await Promise.all([
+    prisma.fertilizerRecommendation.count({ where: { user: { clerkId: userId } } }),
+    prisma.deficiencyDetection.count({ where: { user: { clerkId: userId } } }),
     prisma.chatSession.count({ where: { user: { clerkId: userId } } }),
     prisma.weatherAlert.count({ where: { user: { clerkId: userId } } }),
   ]);
-  return { cropCount, diseaseCount, chatCount, weatherCount };
+  return { fertilizerCount, deficiencyCount, chatCount, weatherCount };
 }
 
 async function getRecentActivity(userId: string) {
-  const [crops, diseases, chats] = await Promise.all([
-    prisma.cropRecommendation.findMany({
+  const [fertilizers, deficiencies, chats] = await Promise.all([
+    prisma.fertilizerRecommendation.findMany({
       where: { user: { clerkId: userId } },
       orderBy: { createdAt: "desc" },
       take: 3,
-      select: { id: true, soilType: true, season: true, createdAt: true },
+      select: { id: true, cropType: true, soilType: true, growthStage: true, createdAt: true },
     }),
-    prisma.diseaseDetection.findMany({
+    prisma.deficiencyDetection.findMany({
       where: { user: { clerkId: userId } },
       orderBy: { createdAt: "desc" },
       take: 3,
-      select: { id: true, disease: true, cropType: true, createdAt: true },
+      select: { id: true, deficiency: true, cropType: true, createdAt: true },
     }),
     prisma.chatSession.findMany({
       where: { user: { clerkId: userId } },
@@ -44,17 +44,17 @@ async function getRecentActivity(userId: string) {
       select: { id: true, title: true, language: true, createdAt: true },
     }),
   ]);
-  return { crops, diseases, chats };
+  return { fertilizers, deficiencies, chats };
 }
 
 export default async function DashboardPage() {
   const user = await currentUser();
   const { userId } = await auth();
 
-  let stats = { cropCount: 0, diseaseCount: 0, chatCount: 0, weatherCount: 0 };
+  let stats = { fertilizerCount: 0, deficiencyCount: 0, chatCount: 0, weatherCount: 0 };
   let activity = {
-    crops: [] as { id: string; soilType: string; season: string | null; createdAt: Date }[],
-    diseases: [] as { id: string; disease: string | null; cropType: string | null; createdAt: Date }[],
+    fertilizers: [] as { id: string; cropType: string; soilType: string; growthStage: string | null; createdAt: Date }[],
+    deficiencies: [] as { id: string; deficiency: string | null; cropType: string | null; createdAt: Date }[],
     chats: [] as { id: string; title: string | null; language: string; createdAt: Date }[],
   };
 
@@ -68,20 +68,20 @@ export default async function DashboardPage() {
 
   const statCards = [
     {
-      label: "Crop Recommendations",
-      value: stats.cropCount,
-      icon: Leaf,
+      label: "Fertilizer Recommendations",
+      value: stats.fertilizerCount,
+      icon: FlaskConical,
       iconColor: "text-primary",
       iconBg: "bg-secondary",
-      href: "/dashboard/crops",
+      href: "/dashboard/fertilizer",
     },
     {
-      label: "Disease Detections",
-      value: stats.diseaseCount,
-      icon: Bug,
+      label: "Deficiency Analyses",
+      value: stats.deficiencyCount,
+      icon: AlertTriangle,
       iconColor: "text-destructive",
       iconBg: "bg-destructive/10",
-      href: "/dashboard/disease",
+      href: "/dashboard/deficiency",
     },
     {
       label: "Chat Sessions",
@@ -102,10 +102,10 @@ export default async function DashboardPage() {
   ];
 
   const quickActions = [
-    { label: "Get Crop Recommendation", href: "/dashboard/crops", icon: Leaf },
-    { label: "Detect Plant Disease", href: "/dashboard/disease", icon: Bug },
+    { label: "Get Fertilizer Recommendation", href: "/dashboard/fertilizer", icon: FlaskConical },
+    { label: "Detect Nutrient Deficiency", href: "/dashboard/deficiency", icon: AlertTriangle },
     { label: "Check Weather", href: "/dashboard/weather", icon: CloudSun },
-    { label: "Chat with AI", href: "/dashboard/chatbot", icon: MessageSquare },
+    { label: "Chat with AI Advisor", href: "/dashboard/chatbot", icon: MessageSquare },
   ];
 
   const displayName =
@@ -113,7 +113,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      {/* Welcome Banner */}
       <div className="bg-primary rounded-2xl p-6 text-primary-foreground shadow-md">
         <div className="flex items-start justify-between">
           <div>
@@ -122,7 +121,7 @@ export default async function DashboardPage() {
             </p>
             <h1 className="text-2xl font-bold tracking-tight">{displayName}!</h1>
             <p className="text-primary-foreground/70 text-sm mt-1.5">
-              Your smart farming dashboard is ready. What would you like to do today?
+              Your smart fertilizer dashboard is ready. What would you like to do today?
             </p>
           </div>
           <div className="bg-primary-foreground/10 p-3 rounded-xl">
@@ -131,7 +130,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
@@ -156,7 +154,6 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -183,37 +180,36 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {activity.crops.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-colors">
+              {activity.fertilizers.map((f) => (
+                <div key={f.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-colors">
                   <div className="bg-secondary p-2 rounded-lg shrink-0">
-                    <Leaf className="w-3.5 h-3.5 text-primary" />
+                    <FlaskConical className="w-3.5 h-3.5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      Crop Rec: {c.soilType} soil — {c.season ?? "N/A"}
+                    <p className="text-sm font-medium text-foreground truncate capitalize">
+                      Fertilizer: {f.cropType} — {f.soilType} soil
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                       <Calendar className="w-3 h-3" />
-                      {new Date(c.createdAt).toLocaleDateString()}
+                      {new Date(f.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
               ))}
-              {activity.diseases.map((d) => (
+              {activity.deficiencies.map((d) => (
                 <div key={d.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-colors">
                   <div className="bg-destructive/10 p-2 rounded-lg shrink-0">
-                    <Bug className="w-3.5 h-3.5 text-destructive" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      Disease: {d.disease ?? "Unknown"} on {d.cropType ?? "plant"}
+                      Deficiency: {d.deficiency ?? "Unknown"} on {d.cropType ?? "plant"}
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                       <Calendar className="w-3 h-3" />
@@ -229,7 +225,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      Chat: {c.title ?? "Farming Query"} ({c.language})
+                      Chat: {c.title ?? "Fertilizer Query"} ({c.language})
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                       <Calendar className="w-3 h-3" />
@@ -238,12 +234,14 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               ))}
-              {activity.crops.length === 0 &&
-                activity.diseases.length === 0 &&
+              {activity.fertilizers.length === 0 &&
+                activity.deficiencies.length === 0 &&
                 activity.chats.length === 0 && (
                   <div className="text-center py-8">
                     <p className="text-sm text-muted-foreground">No activity yet.</p>
-                    <p className="text-xs text-muted-foreground mt-1">Start by getting a crop recommendation!</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Start by getting a fertilizer recommendation!
+                    </p>
                   </div>
                 )}
             </div>
